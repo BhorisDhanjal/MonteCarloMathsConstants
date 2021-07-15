@@ -33,12 +33,15 @@
 \numberwithin{equation}{section}
 \graphicspath{ {./Images/} }
 \usepackage[raggedright]{titlesec}
+\usepackage{placeins}
 \input{structure.tex}
+\usepackage{mathtools}
 \newcommand\numberthis{\addtocounter{equation}{1}\tag{\theequation}}
 \newcommand{\QED}{\tag*{$\square$}}
 \newtheorem{theorem}{Theorem}[section]
 \newtheorem{corollary}{Corollary}[theorem]
 \newtheorem{lemma}[theorem]{Lemma}
+\interfootnotelinepenalty=10000
 \makeatletter
 
 \newcommand\frontmatter{%
@@ -99,6 +102,9 @@ Name and Signature of Student:\\
 
 \section*{\centering{Acknowledgements}}
 \addcontentsline{toc}{section}{Acknowledgements}
+We would like to express our deepest thanks to our professors, Prof. Myrtle Fernandes and Prof. Ayesha Dias and the rest of the Department of Statistics at St. Xavier's, for encouraging us to explore this topic.
+\par We would further like to thank our friends and family for offering emotional support.
+\par We further extend our gratitude towards the vast trove of information we gleaned from the internet, via papers and various online forums on StackExchange (CrossValidated, Mathematics, Mathematica \& TeX).
 \clearpage
 \tableofcontents
 
@@ -109,18 +115,19 @@ Name and Signature of Student:\\
 \mainmatter
 \maketitle
 \begin{abstract}
-    This project primarily serves to showcase Monte Carlo simulations. We first derive the crude Monte Carlo estimator for numerical integration. Following which we will use MC simulations to estimate a few well known mathematical constants. Quasi-Monte Carlo integration and importance sampling as methods of reducing integration variance will be examined at the end.
+    This project primarily serves to showcase Monte Carlo simulations. We first derive the naïve Monte Carlo estimator for numerical integration. Following which we use Monte Carlo simulations to estimate a few well known mathematical constants. Variance reduction techniques and Quasi-Monte Carlo integration will be examined at the end.
 \end{abstract}
 \section{Introduction} % Unnumbered section
 In this project we will explore Monte Carlo simulations.
 The objectives of this project are as follows:
 \begin{itemize}
     \item Provide a conceptual overview of the Monte Carlo method.
-    \item Describing and demonstrating a naive numerical MC integration algorithm.
-    \item Using various MC simulations to calculate $\pi, e, \gamma_n$ and, $\phi$.
-    \item Demonstrating Quasi-Monte Carlo integration and comparing it with naive numerical MC integration.
+    \item Describing and demonstrating naïve numerical Monte Carlo integration.
+    \item Using various Monte Carlo simulations to calculate $\pi, e, \gamma_n, \phi$, and $\zeta (3)$.
+    \item Describing variance reduction techniques for Monte Carlo integration.
+    \item Demonstrating Quasi-Monte Carlo integration and comparing it with naïve numerical MC integration.
 \end{itemize}\par
-The Mathematica notebook (comprising of all code used for computations and plots) and \LaTeX \ source code can be viewed at GitHub with the following link.\\
+The Mathematica notebook (comprising of all code used for computations and plots) and \LaTeX \ source code for this document can be viewed at GitHub with the following link.\\
 \href{https://github.com/BhorisDhanjal/reciprocal-multifactorial-constants}{\faGithubSquare} \href{https://github.com/BhorisDhanjal/MonteCarloMathsConstants}{https://github.com/BhorisDhanjal/MonteCarloMathsConstants}
 \vfill
 %----------------------------------------------------------------------------------------
@@ -131,14 +138,14 @@ In this section we will describe the algorithm for numerical Monte Carlo integra
 \subsection{Overview of Monte Carlo method}
 Monte Carlo simulations are a general class of computational algorithms that rely on random number sampling \footnote{Note that for the majority of this project we will be utilizing pseudo-random numbers.}. They are used to estimate numerical results for problems for which analytical solutions are either very difficult to obtain or impossible.
 \subsection{Naive Monte Carlo integration}
-We can demonstrate the theory behind naive \footnote{We call it "naive" since it utilizes uniformly distributed random variates, more sophisticated methods are discussed in the last section of this project.} Monte Carlo integration in a simplified manner as below \cite{caflisch_1998, stefanmontecarlo}.
+We can demonstrate the theory behind naïve \footnote{We call it "naïve" since it utilizes uniformly distributed random variates, more sophisticated methods are discussed in the last section of this project.} Monte Carlo integration in a simplified manner as below \cite{caflisch_1998, stefanmontecarlo}.
 \begin{theorem}
-$\frac{1}{N} \sum_{i=1}^N f(X_i)$ is an unbiased estimator for $\int_\Omega f(x)\ dx$
+$\frac{1}{N} \sum_{i=1}^N f(X_i)$ is an unbiased estimator for $\int_{[0,1]^s} f(x)\ dx$
 \end{theorem}
-For points $x={(x_1,x_2, \dots, x_d)}$ consider a function $f(x)$ over the unit hypercube ($\Omega=[0,1]^d$) in $\mathbb{R}^d$.
+For points $x={(x_1,x_2, \dots, x_s)}$ consider a function $f(x)$ over the unit hypercube $[0,1]^s$ in $\mathbb{R}^s$.
 \begin{align*}
-    \mathcal{I}[f]&=\int_\Omega f(x)\ dx
-    \intertext{The approximation of $\mathcal{I}[f]$ is given by the expectation of $f(X)$ for some uniformly distributed random variable $X$.}
+    \mathcal{I}[f]&=\int_{[0,1]^s} f(x)\ dx
+    \intertext{The approximation of $\mathcal{I}[f]$ is given by the expectation of $f(X)$ for some uniformly distributed random variable $X \in [0,1]^s$.}
     \mathcal{I}[f]&=E[f(X)]=E
     \intertext{Where an estimation for expectation is given by the sample mean,}
     \widehat{\mathcal{I}} &= \frac{1}{N}\sum_{i=1}^N f(X_i)
@@ -159,21 +166,21 @@ In general, for a function $f(x)$ over any volume $V$ in $\mathbb{R}^n$ we can s
 \end{align*}
 \subsection{Error of Naive Monte Carlo integration}
 \begin{theorem}
-The standard error of the estimator is inversely proportional to the square root of random points chosen.
+The standard error of the estimator is inversely proportional to the square root of the number of random points chosen.
 \end{theorem}
 Consider the variance for above described estimator $\widehat{\mathcal{I}}$,
 \begin{align*}
     \sigma^2_{\widehat{\mathcal{I}}}&=\sigma^2\left(\frac{1}{N} \sum_{i=1}^N f(X_i) \right)\\
     &=\frac{1}{N^2}\sigma^2 \left( \sum_{i=1}^N f(X_i) \right)
-    \intertext{Since $X_i$ are uniformly distributed random variables, we can say they are independent. Therefore, the variance of the sum is the same as the sum of the variance.}
+    \intertext{Since $X_i$ are uniform iid r.v., the variance of the sum is equal to the sum of the variance.}
     &=\frac{1}{N^2} \sum_{i=1}^N \sigma^2(f(X_i))\\
-    &=\frac{1}{N^2}N \sigma^2_\mathcal{I}\\
-    \sigma^2_{\widehat{\mathcal{I}}}&=\frac{\sigma^2_{\mathcal{I}}}{N}\\
-    \sigma_{\widehat{\mathcal{I}}}&=\frac{\sigma_{\mathcal{I}}}{\sqrt{N}}\\
-    \sigma_{\widehat{\mathcal{I}}}&\propto \frac{1}{\sqrt{N}} \QED
+    &=\frac{1}{N^2}N \sigma^2_{f(X_{i})}\\
+    \sigma^2_{\widehat{\mathcal{I}}}&=\frac{\sigma^2_{f(X_{i})}}{N}\\
+    \sigma_{\widehat{\mathcal{I}}}&=\frac{\sigma_{f(X_{i})}}{\sqrt{N}}\\
+               \sigma_{\widehat{\mathcal{I}}}&\propto \frac{1}{\sqrt{N}} \QED
 \end{align*}
-This implies that, in naive Monte Carlo integration, reducing the error by half requires increasing the number of random points by a factor of 4. \par We will explore variable reduction methods (i.e. quasi-random Monte Carlo, importance sampling etc.) in the last section of this project. For the rest of this project however, we will only utilize naive Monte Carlo integration that we implement using pseudo-random numbers.
-\subsection{An example of naive Monte Carlo Integration}
+This implies that, in naïve Monte Carlo integration, reducing the error by half requires increasing the number of random points by a factor of 4. \par We will explore variable reduction methods in the last section of this project. For the rest of this project however, we will only utilize naïve Monte Carlo integration that we implement using pseudo-random numbers.
+\subsection{An example of naïve Monte Carlo Integration}
 In order to better motivate Monte Carlo integration we will provide a simple visualization.\\
 \textbf{Example 1.} Estimating $\int_2^5 100 - 8x^2 + x^3\ dx$ with 5 random points.
 \par We begin by generating 6 random real numbers between 2 and 5. We will evaluate these points in $f(x)=100-8x^2+x^3$ and plot it.
@@ -196,7 +203,7 @@ It is now clear to see that taking the mean of these rectangle areas will give u
 %	Section 3
 %----------------------------------------------------------------------------------------
 \section{Estimating Pi}
-In this section we will discuss the concepts of  the  Monte  Carlo  technique  for  estimating  the  value  of  pi( $\mathbf{\pi}$).
+In this section we will discuss the application of  Monte  Carlo  techniques  for  estimating  the  value  of  pi.
 
 \subsection{Elementary Method}
 In order to estimate the value of pi using Monte Carlo simulations we will estimate the area of a unit circle inscribed in a unit square.
@@ -225,13 +232,12 @@ We now repeat the experiment $10^3$ times with $10^6$ points. Taking the mean of
 \end{figure}
 
 \subsection{Buffon's Needle}
- \textit{“A large plane area is ruled with equidistant parallel lines, the distance between two consecutive lines
-of the series being a. A thin needle of length $l< a$ is tossed randomly onto the plane. What is the probability that the needle will intersect one of the lines?"}\par
- This forms the basis of the Buffon’s Needle problem. Which can be solved using elementary integral calculus \cite{needlewang}. Based on this analytical solution, the experiment can be used to approximate $\pi$ using Monte Carlo simulations.
+ \textit{“A large plane area is ruled with equidistant parallel lines, the distance between two consecutive lines is 'a'. A thin needle of length $l< a$ is tossed randomly onto the plane. What is the probability that the needle will intersect one of the lines?"}\par
+ This forms the basis of the Buffon’s Needle problem. Which can be solved using elementary integral calculus \cite{needlewang}. with the help of this analytical solution, the experiment can be used to approximate $\pi$ using Monte Carlo simulations.
 \begin{theorem}
 The probability of a needle intersecting a line is given by $p=\frac{2l}{a \pi}$.
 \end{theorem}
- For a given needle of length "l" we model the dropping of the needle on the ruled plane with parallel lines "a" units apart as follows. \par
+ For a given needle of length $l$ we model the dropping of the needle on the ruled plane with parallel lines $a$ units apart as follows. \par
  Let x be the distance from the center of the needle to the nearest line and $\theta$ be the acute angle between the needle and the lines. Let x be a uniform random variable over the interval
 \par
 The uniform probability density function of x between 0 and $ \frac{t}{2}$ is
@@ -257,13 +263,12 @@ $(x,\theta)$
     \dfrac{4}{a\pi} &  0 \leqslant x\leqslant \dfrac{a}{2} \text{ and } 0 \leqslant x\leqslant \dfrac{\pi}{2}\\
 0  &  \text {   otherwise}
 \end{cases}\]
-\par
- for the short needle case $\left( l \leqslant a \right)$  A needle
+\\ for the short needle case $\left( l \leqslant a \right)$  A needle
 intersects a line if
 \begin{align*}
     \left( x \leqslant \frac{l}{2}\sin \theta \right )
 \end{align*}
-\par
+\\
 The probability that the needle will intersect a line is
 
 \begin{align*}
@@ -274,7 +279,8 @@ p=\int_{0}^\frac{\pi}{2}\int_{0}^{\frac{l}{2} \sin \theta} f(x,\theta)\ dx\ d\th
     p =\frac{2l}{a\pi} \QED
 \end{align*}
 \par
-The p value can be estimated through Buffon's needle experiment. If the experiment contains n needles and there are m needles intersect lines, then the probability p can be estimated by the proportion
+
+If experiment has n needles out of which m needles intersect lines, then the value of p can be estimated as
 \begin{align}
     \widehat{p}&=\frac{m}{n} \nonumber
     \intertext{$\pi$ can therefore be estimated by}
@@ -298,40 +304,37 @@ We then repeat the experiment $10^3$ times with $10^6$ needles. Taking the mean 
 
 \clearpage
 \subsection{Buffon's Noodle}
-In this case we will estimate $\pi$ using Buffon's noodle problem. Buffon's noodle poses the question, "What is the expected number of crossings if we don't drop rigid needles but rather a flexible noodle?". \par       
-For  straight needle N  there are exactly n line crossing for exactly n intersection of needles with the infinite grid giving us the expectation of line crossing as $E(N)=\frac{2a}{\pi d}$. where a is the length of needle. using the corollary of this result 
- that E(N) is a function of the length of the needle
+Buffon's noodle poses the question, "What is the expected number of crossings if we don't drop a rigid needle but rather a flexible noodle?". In this section we will estimate $\pi$ using Buffon's noodle problem.\par       
+For  straight needle $N$  there are  $n$ line crossing for  $n$ intersection of needles with the infinite grid and thus the expectation of line crossing as $E[N]=\frac{2a}{\pi d}$. where $a$ is the length of needle. Using the corollary of this result, that $E[N]$ is a function of the length of the needle
 only, not its shape \cite{noodle}.
 \begin{theorem}
 Let N be a noodle of length 't' thrown at random onto an infinite
-grid of parallel lines with common distance d between them. Then the expected number of line-crossings E(N) is given by E(N) = $\frac{2t}{\pi d}$. 
+grid of parallel lines with common distance d between them. Then the expected number of line-crossings E[N] is given by E[N] = $\frac{2t}{\pi d}$. 
 \end{theorem}
 \par
-We remark that our definition of line-crossing demands that we count as  distinct crossings in the event that the noodle crosses the same line in different  places
-In general if a needle intersects n times in m attempts, then a combination of “a”   such needles is expected to be intersected  “na” times in m attempts
-If this combination is formed by infinitesimally  small needles , then it will become noodle\par
-Lets choose a  sequence of polygonal lines $L_1$  $L_2$,$\cdots$ that approaches the curve N uniformly. The segments of the line $L_i$ we shall denote as $L_i1$, $L_i2$, · · · , $L_in$ and we
-shall write $L_i=L_i1+L_i2+ \cdots +L_in $ 
-letting $a_ij$ be the length of $L_{ij}$ such that $a_{ij}<d$ for all i and j 
- so that e($L_ij$) is
-just the probability that $L_ij$ crosses a line,
- e($L_ij$) =$ 2a/\pi d$ Now letting $a_i$
-be the length of $L_i$, we know that $a_i$ approaches a as i tends to infinity. Hence,
-if $e(L_i) = e(L_j) + \cdots +e(L_n) $for all i, then 
-\begin{equation}
-    e(L_i) = \sum (2a_i/ \pi d) = (2/\pi d) \sum (a_ij) = (2/\pi d)a_i
-\end{equation}
-hence in the limit 
+We take into consideration the fact that, a noodle due to its shape could cross a line in more than one spot.
+In general if a needle intersects $n$ times in $m$ attempts, then a combination of $a$ such needles is expected to be intersected $na$ times in $m$ attempts.
+\par 
+If this combination is formed by infinitesimally  small needles , then it will become equivalent to a noodle.\par
+Consider a sequence of polygonal lines $L_1$  $L_2$,$\cdots$ which approaches the curve of the noodle $N$ uniformly.  Let $L_{i1}$, $L_{i2}$, · · · , $L_{im}$ be the segments of the line $L_i$,
+such that $L_i=L_{i1}+L_{i2}+ \cdots +L_{im} $. Let $t_{ij}$ be the length of $L_{ij}$ such that $t_{ij}<d$ for all $i$ and $j$. 
+\par
+The expectation of line crossing the grid be E[$L_{ij}$] hence
+ E[$L_{ij}$] =$ 2t/\pi d$ Now letting $t_i$
+be the length of $L_i$, we know that $t_i$ approaches $t$ as $i$ tends to infinity. Hence,
+if $E[L_i] = E[L_j] + \cdots +E[L_n] $for all i, then 
 \begin{align}
-e(N)= \frac{2a}{\pi d}
+    E[L_i] = \sum_{i=j}^n \frac{2t_{i}}{\pi d} &= \frac{2}{\pi d} \sum_{i=j}^n t_{i} = \frac{2 t}{\pi d}
+\intertext{hence in the limit}
+E[N]&= \frac{2t}{\pi d} \QED
 \end{align}
 
 
 \subsubsection{A note on the simulation of noodles}
-Simulating a "noodle" isn't very straightforward computationally, since "noodles" aren't very well defined. We choose to simulate it by considering a line of length $l$ divided into a random number of segments (between 5 and 10), and then randomizing the angles between the segments. One could also choose the make smooth noodles, by using bezier curves instead.
+Simulating a "noodle" isn't a very straightforward task computationally, since "noodles" aren't very well defined. Here, we choose to simulate it by considering a line of length $l$ divided into a random number of segments (between 5 and 10), and then randomizing the angles between the segments. One could also choose the make smooth noodles, by using bezier curves instead.
 \par 
 An example of a single experiment with 1000 noodles is shown  below.\
-We now repeat the experiment $250$ times with $10^4$ noodles. Taking the mean of these $250$ experiments gives us the following approximation. $\pi \approx 3.18615 \pm 0.04602$, with $ + 1.418\ \%$ error.
+We now repeat the experiment $250$ times with $10^4$ noodles. Taking the mean of these $250$ experiments gives us the following approximation. $\pi \approx 3.18615 \pm 0.04602$, with a $ + 1.418\ \%$ error.
 \begin{figure}[!htb]
     \centering
     \includegraphics[width=10cm]{Images/noodleexample.png}
@@ -341,7 +344,7 @@ We now repeat the experiment $250$ times with $10^4$ noodles. Taking the mean of
 
 \begin{figure}[!htb]
     \centering
-    \includegraphics[width=10cm]{Images/repeatednoodle.png}
+    \includegraphics[width=8cm]{Images/repeatednoodle.png}
     \caption{Histogram of Buffon's noodle experiment with $10^4$ needles, repeated $250$ times.}
     \label{fig:repeatednoodle}
 \end{figure}
@@ -394,14 +397,14 @@ For iid uniform r.v. $U_1, U_2 \cdots U_n$ over (0,1), with $S_n=\sum_{i=1}^n U_
 If we can show that $P(N=n)=\frac{n-1}{n!}$, then we are done. Hence we continue as follows,
 \begin{align*}
     P(N=n)&=P(S_{n}>1 \cap S_{n-1}<1)\\
-    &=P(S_n>1)P(S_{n-1}<1)=P(S_{n-1}<1)-P(S_{n}<1)
+    &=P(S_{n-1}<1)-P(S_{n}<1)
 \end{align*}
 We have further simplified our problem, now all that remains is to show that $P(S_n<1)=\frac{1}{n!}$. This would complete the proof. We use the CDF of the Irwin-Hall distribution \cite{hall}.
-\par The Irwin-Hall distribution is simply defined as, the sum of n independent and identically distributed, uniform distributions defined on the unit interval. The CDF of Irwin-Hall distribution is given as \footnote{This can be derived by integrating the pdf, which is in turn derived by induction by taking the convolution of $f_n \ast f$ to prove the $n+1^{th}$ case.}, 
+\par The Irwin-Hall distribution is defined as, the sum of n independent and identically distributed, uniform distributions on the unit interval. The CDF of Irwin-Hall distribution is given as \footnote{This can be derived by integrating the pdf, which is in turn derived by induction by taking the convolution of $f_n \ast f$ to prove the $n+1^{th}$ case.}, 
 \begin{align*}
     F(x)&=\frac{1}{n!} \sum_{k=0}^{\lfloor x \rfloor} (-1)^k \binom{n}{k} (x-k)^n
     \intertext{For x=1}
-    F(1)&=P(S_n<1)=\frac{1}{n!} \sum_{k=0}^{1} (-1)^k \binom{n}{k} (1-k)^n=\frac{1}{n!} \QED 
+    F(1)=P(S_n<1)&=\frac{1}{n!} \sum_{k=0}^{1} (-1)^k \binom{n}{k} (1-k)^n=\frac{1}{n!} \QED 
 \end{align*}
 \par The astute reader may ask what is $E[N]$ if we consider $S_n>a$ for any real number $a$? This general form is answered in the paper by Russell \cite{russell_1983}.
 \par We now continue with the simulation to predict $e$ by choosing $10^6$ random uniform numbers between (0,1) and counting the average number of times it takes for the sum to cross 1.
@@ -474,6 +477,7 @@ We simulate the Gumbel distribution by using its quantile function (i.e. inverse
     \caption{Histogram of experiment with $10^6$ points, repeated $10^4$ times.}
     \label{fig:repeatedgamma}
 \end{figure}
+\FloatBarrier
 \subsection{Stieltjes constants}
 Calculating Stieltjes constants is not a trivial task, there exist many infinite series representations of Stieltjes constants which converge very slowly \cite{stieltjeswolfram} (see eq.12). Extensive work has also been done in implementing fast algorithms to compute Stieltjes constants with high accuracy \cite{johansson2018computing}.
 \par We will approximate a few Stieltjes constants by estimating the following integral definition.
@@ -481,9 +485,9 @@ Calculating Stieltjes constants is not a trivial task, there exist many infinite
     \gamma_n = \frac{(-1)^n n!}{2 \pi} \int_0^{2 \pi} e^{nix} \zeta (e^{ix}+1)\, dx \label{5.4}
 \end{align}
 \par The above integral is derived by using Cauchy's differentiation formula on $$(-1)^n \gamma_n= \frac{d^n}{dz^n} \left. \left ( \zeta(z) - \frac{1}{z-1}\right)\right|_{z=1}$$
-which is in turn derived by comparing the Laurent series of the Zeta function with a traditional Taylor series.
+which is in turn obtained by comparing the Laurent series of the Zeta function with a traditional Taylor series.
 \par The reader should note that calculating Stieltjes constants with Monte Carlo integration is not at all practical due to the low accuracy. For practical approximations other forms of numerical integration techniques are used \cite{johansson2018computing, newtoncotes}.
-\par We will estimate eq. \ref{5.4} using the crude Monte Carlo integration described in the first section. The following table shows the results we achieved.
+\par We will estimate eq. \ref{5.4} using the naïve Monte Carlo integration described in the first section. The following table shows the results we achieved.
 
 \begin{table}[!htb]
 \centering
@@ -512,9 +516,9 @@ $4$ & $10^5$ & $3 \cdot 10^4$ & $+0.00233049 \pm 0.06136$ & \multicolumn{1}{l}{$
 %----------------------------------------------------------------------------------------
 \section{Estimating Phi}
 We conclude the estimation of mathematical constants on a lighter note.
-\par Since $\varphi$ is an algebraic number, estimating $\varphi$ is very trivial. Since we know that $\varphi = \frac{1+\sqrt{5}}{2}$, we can simply choose an integral which evaluates to the desired result. We will choose $\int_4^5 \frac{3}{2}+\frac{1}{4 \sqrt{x}}\ dx$ which is evidently equal to $\varphi$.
+\par Since the golden ratio ($\varphi$) is an algebraic number, estimating $\varphi$ is very trivial. Since we know that $\varphi = \frac{1+\sqrt{5}}{2}$, we can simply choose an integral which evaluates to the desired result. We will choose $\int_4^5 \frac{3}{2}+\frac{1}{4 \sqrt{x}}\ dx$ which is evidently equal to $\varphi$.
 \par We estimate the integral with the method described in Section 1.
-\par We repeat the experiment $10^4$ times with $10^6$ points per experiment. Taking the mean of these $10^4$ experiments gives us the following approximation, $\varphi \approx 1.61803 \pm 3.79948 \cdot 10^-6$, with $6.544 \cdot 10^{-7}\ \%$ error. In fact the approximation is correct up to 7 decimal places.
+\par We repeat the experiment $10^4$ times with $10^6$ points per experiment. Taking the mean of these $10^4$ experiments gives us the following approximation, $\varphi \approx 1.61803 \pm 3.79948 \cdot 10^-6$, with $6.544 \cdot 10^{-7}\ \%$ error. In fact the approximation is correct up to 7 decimal places!
 \begin{figure}[!htb]
     \centering
     \includegraphics[width=10cm]{Images/repeatedphi.png}
@@ -524,16 +528,228 @@ We conclude the estimation of mathematical constants on a lighter note.
 %----------------------------------------------------------------------------------------
 %	Section 7
 %----------------------------------------------------------------------------------------
-\section{Quasi-Monte Carlo integration}
-Throughout the project so far we have only considered what is known as "naive" Monte Carlo integration. We will now justify its nomenclature by listing out 2 modified methods of Monte Carlo integration that are so designed to reduce variability.
+\section{Methods of integral variance reduction}
+Throughout the project so far we have only considered what is known as "naïve" Monte Carlo integration. We will now justify its nomenclature by listing out a few modified methods of Monte Carlo integration that are so designed to reduce variability \cite{caflisch_1998, anithetic}.
+\par To demonstrate the effectiveness of these method we will be estimating the following integral,
+\begin{align}
+    \int_0^1 \int_0^1 \frac{\sin x \sin y}{x y}\, dx\, dy \label{sinx}
+\end{align}
 \par
-Quasi-Monte Carlo integration is simply, Monte Carlo integration using quasi-random generated numbers to form the integration nodes (as opposed to pseudo-random in naive integration) \cite{MOROKOFF1995218}.
+It is a well known fact that $\int_0^z \frac{\sin x}{x}\, dx$ has no elementary closed form, in fact it is just represented by $Si(z)$ for simplicity. It is then clear to see that eq. \ref{sinx} is equal to $Si(1)^2$.
+\subsection{Antithetic variates}
+Antithetic variates is a technique for variance reduction, in which we use the antithetic pair ($-x_1, \cdots, -x_n$) of pre-obtained samples ($x_1, \cdots x_n$) in the Monte Carlo simulation.
+The advantage of this technique is that, it reduces the number of
+% normal 
+samples to be taken to generate $N$ integration nodes, and thus, reduces the variance of the sample 
+\par We will give a short proof of the above statement.
+\begin{theorem}
+Random variable X and Y, on the same probability space are antithetic if they have same distribution and their covariance is negative. 
+\end{theorem}
+
+   Take two variable X and Y . the variance of the average of $x,y$ is 
+   \begin{align*}
+       \text{Var}\left[\frac{1}{2}(x+y)\right]&=\frac{1}{4}[\text{Var}(X) + \text{Var}(Y)+2 \text{ Cov}(X,Y)]
+       \intertext{since we know that,}
+       \text{Cov}(X,Y)&=\rho \sqrt{\text{Var}X}\sqrt{\text{Var}Y}
+       \shortintertext{where $\rho$ is the correlation between X and Y. It can be clearly seen that Var(X+Y) is minimised when $\rho=-1$ i.e if X and Y are perfectly negatively correlated.} \QED
+   \end{align*}
+  Now we will compare antithetic variables vs naïve Monte Carlo with eq. \ref{sinx}.
+\begin{figure}[!htb]
+    \centering
+    \includegraphics[width=13cm]{Images/naivevsanti.png}
+    \caption{Comparison of estimating e.q. \ref{sinx} with naïve Monte Carlo vs Monte Carlo with antithetic variables (for points ranging from 1 to 10,000).}
+    \label{fig:naivevsanti}
+\end{figure}
+\subsection{Control variates}
+\par In this variance reduction technique, we use a known integral with a value approximately equal to the unknown integral to reduce the error in the estimate of unknown integral.
+\begin{theorem}
+$I[f] \approx \frac{1}{N} \sum_{i=1}^N (f(X_i)-g(X_i)) + \theta$
+\end{theorem}
+Suppose we want to find $\mu= E[f(x)]$. We find some $\theta=E[g(x)]$ where $g(x)\approx f(x)$,
+hence $\widehat{\mu}=\frac{1}{N}\sum_{i=1}^N f(X_i)$ and $\widehat{\theta}=\frac{1}{N}\sum_{i=1}^N g(X_i)$ for a r.v. $X$. We can estimate $\mu$ by the following estimator,
+\begin{align*}
+\widehat{\mu}_{\text{diff}}=\frac{1}{N}\sum_{i=1}^N (f(x_i)-g(x_i))+\theta
+\end{align*}
+\par This estimator is motivated due to the linearity of integrals.
+The expected value of $\widehat{\mu}=\mu$, since $E[\widehat{\theta}]=\theta$. 
+\begin{align*}
+    \text{Var}(\widehat{\mu}_{\text{diff}}) =\frac{1}{N} \text{Var} ( f(X) -g(X))
+    \intertext{If $f(X)\approx g(X)$, then,}
+    \text{Var} (f(X) - g(X)) < \text{Var}(f(X)) 
+    \shortintertext{Hence, we use $(\widehat{\mu}_{\text{diff}})$ to reduce the variance. Here $g(X)$ is known as the control variate.} \QED
+\end{align*}
+
+\par We will now compare Monte Carlo integration in estimating eq. \ref{sinx} using both control variates as well as antithetic variables.
+\par To generate a known integral $g(x)$ which is close to $f(x)$ we will employ the use of taylor series. Finding the taylor series of $f(x)$ about $0$, we estimate the integrand as follows,
+\begin{align*}
+    \frac{\sin x \sin y}{xy}&=\sum _{n=0}^\infty \sum _{m=0}^\infty x^n y^m \frac{\cos \frac{m \pi}{2} \cos \frac{n \pi}{2}}{ (m+1)! (n+1)!}
+    \intertext{Using n=m=0 to n=m=2 as a approximation we get,}
+    \frac{\sin x \sin y}{xy}&\approx 1-\frac{x^2}{6}-\frac{y^2}{6}+\frac{x^2 y^2}{36}
+\end{align*}
+We therefore use this approximation as $g(x)$,
+\begin{align}
+    g(x)&=\int_0^1 \int_0^1 1-\frac{x^2}{6}-\frac{y^2}{6}+\frac{x^2 y^2}{36}\, dx\, dy= \frac{289}{324}
+\end{align}
+\par Finding a taylor series is obviously not practical for most integrands, but even very rough approximations will significantly reduce variability.
+
+\begin{figure}[!htb]
+    \centering
+    \includegraphics[width=\textwidth]{Images/controlvariate.png}
+    \caption{Comparison of estimating e.q. \ref{sinx} with control variate Monte Carlo vs Monte Carlo with antithetic variables and control variate (for points ranging from 1 to 10,000).}
+    \label{fig:controlvariate}
+\end{figure}
+\FloatBarrier
+\par To put this the effectiveness of the control variate method in perspective we shall see it in comparison to the naïve method.
+
+\begin{figure}[!htb]
+    \centering
+    \includegraphics[width=\textwidth]{Images/controlvsnaiveanti.png}
+    \caption{Comparison of the control variate with naïve Monte Carlo.}
+    \label{fig:controlvsnaivevariate}
+\end{figure}
+\par The reduction is variance is now much more striking.
+
+\clearpage
+\section{Quasi Monte-Carlo integration}
+Quasi-Monte Carlo integration, simply put, is Monte Carlo integration using quasi-random generated numbers to form the integration nodes (as opposed to pseudo-random in naïve integration) \cite{MOROKOFF1995218}.
+\par The reader should note that in this section, we will only provide a cursory overview of Quasi Monte-Carlo integration and its results. Detailed proofs will not be given as they are far beyond the scope of this project. A vast amount of the theory surrounding this topic has been carried out by H. Niederreiter in a series of papers \cite{Niederreiter1978QuasiMonteCM, lowdiscrepancyNIEDERREITER198851} and books \cite{kuipers1974uniform} which we recommend for further reading.
 \subsection{Quasi-random sequences (low-discrepancy sequences)}
-To make the above statement clearer, we will first define quasi-random numbers.
-\par Quasi-random numbers are numbers generated from quasi-random sequences, which are in turn defined as sequences with low discrepancy \cite{quasirandomdiscrepancy}.
+\par Quasi-random numbers are numbers generated from quasi-random sequences, which are in turn defined as sequences with low discrepancy \cite{quasirandomdiscrepancy}. We will first define what is meant by discrepancy.
+\par
+Discrepancy can be intuitively thought of as a measure of uniformity. We will now see the formal definition for discrepancy for a one-dimensional sequence \cite{Niederreiter1978QuasiMonteCM}.
+\par Let $x_1, x_2, \cdots x_N$ be $N$ numbers in $I=[0,1]$, let $E \subset I$. Define a function $A(E;N)$ such that, it counts the number of $n, 1\leq n\leq N$, for $x_n \in E.$ The discrepancy $D_n$ of the $N$ numbers in $I$ is then given by,
+\begin{align}
+    D_n=\sup_J \left| \frac{A(J;N)}{N}-|J| \right|
+    \intertext{Where, $J$ is any sub-interval of $I$. The star discrepancy ($D_N^*$) is a more commonly used definition which is as follows.}
+    D_N^*=\sup_{0\leq t \leq 1} \left | \frac{A([0,t); N)}{N} - t  \right|
+\end{align}
+\par These above definitions are easily generalized to $[0,1]^s$ by calculating $|J|$ with the respective metric.
+\par $D_n$ and $D_n^*$ are related by the following inequality \cite{Niederreiter1978QuasiMonteCM}
+\begin{align}
+    D_n^* \leq D_n \leq 2^s D_n^* \label{starrelation}
+\end{align}
+\clearpage
+\subsection{Error in Quasi Monte-Carlo integration}
+Niederreiter has shown \cite{Niederreiter1978QuasiMonteCM} that for any dimension $s \geq 1$, there exists an infinite sequence of points in $I^s$ such that, for some constant $c_s$ only dependent on dimension, 
+\begin{align*}
+    D_N = O \left(c_s \frac{\log N ^s}{N}\right)
+\end{align*}
+The famous Koksma–Hlawka inequality states that \cite{Niederreiter1978QuasiMonteCM},
+\begin{align*}
+    \left| \frac{1}{N} \sum_{n=1}^{N} f(x_n)-\int_{[0,1]^s} f(x) dx \right| \leq V(f) D_N^*
+\end{align*}
+Where, $V(f)$ is the bounded total variation of the function \footnote{Note that this is not variance. Discussing total variation rigorously is well beyond the scope of this project, it can be roughly thought of as a infinitesimal absolute value.}.
+\par The Koksma-Hlawka inequality along with eq. \ref{starrelation} is used to show that the error of Quasi Monte-Carlo integration is given by $O \left(c_s \frac{\log N ^s}{N}\right)$ as opposed to $O \left(\frac{1}{\sqrt{N}}\right)$ when using random numbers.
+\par It is then clear to see that for a sufficiently small dimension $s$ and $c_s$ the error by Quasi Monte-Carlo integration is much lower than naïve Monte-Carlo integration.
+\subsection{Examples of Quasi-Random sequences}
+We have so far restrained from giving any examples of methods used to generate quasi-random sequences. In this section we will describe a few important methods \footnote{We will not be proving the values of discrepancies of these examples.}.
+\subsubsection{Van der Corput and Halton sequence}
+We begin by describing Van der Corput sequences \cite{kuipers1974uniform}, which are conceptually the easiest to understand. 
+\par For any integer $n\geq 0$ as follows, we define the following function, known as the radical-inverse function,
+\begin{align}
+    \phi_b(n)=\sum_{j=1}^m a_j b^{-j}=\frac{a_1}{b}+\frac{a_2}{b^2}\cdots \label{radicalinverse}
+\end{align}
+for $a_j$ ranging 0 to $b-1$, $m, b\in \mathbb{Z}$ and $b \geq 2$. The reader should note the similarity of this function with the base $b$ representation of a number. $\phi_b(n)$ is clearly contained in $[0,1]$.
+\par The Van der Corput sequence is defined for any range of $n$'s as,
+\begin{align}
+    x_n=\phi_2(n)
+\end{align}
+With star discrepancy equal to,
+\begin{align}
+    D_N^*= O \left( \frac{\log N}{N}\right)
+\end{align}
+Below we enumerate the first 5 values of the Van der Corput sequence.
+\begin{table}[h!]
+\centering
+\begin{tabular}{ccc}
+\hline
+$n$ & $n_2$ & $\phi_2(n)$ \\ \hline
+$0$ & $0$ & $0$ \\
+$1$ & $1$ & $0.1_2=1/2_{10}$ \\
+$2$ & $10$ & $0.01_2=1/4_{10}$ \\
+$3$ & $11$ & $0.11_2=3/4_{10}$ \\
+$4$ & $100$ & $0.001_2=1/8_{10}$ \\ \hline
+\end{tabular}
+\caption{First 5 values of Van der Corput sequence}
+\label{tab:vandercorput}
+\end{table}
+\par 
+However, the limitation of Van der Corput should now be clear to see. Van der Corput sequences only generates single dimensional numbers.
+\par Halton sequences \cite{halton} are a very natural extension of Van der Corput sequences for higher dimensions $s$, which we define as,
+\begin{align}
+    x_n^s=(\phi_{p_1}(n), \phi_{p_2} (n), \cdots,\phi_{p_s}(n))
+\end{align}
+Where, $p_1, p_2 \cdots p_s$ must are co-prime integers. It is common to simply use the $n^{th}$ prime number at each stage. The reason for this specific selection of bases is to reduce the dimension dependent constant in the discrepancy.
+\par The star discrepancy of Halton sequences is, as expected,
+\begin{align}
+    D_N^*= O \left( \frac{\log N^s}{N}\right)
+\end{align}
+It has been theorized that Van der Corput and Halton sequences have the lowest discrepancy of any quasi-random sequence. This is however not yet been proved. Nevertheless, Halton sequences are very rarely used for numeric integration  due to its tendency of becoming overly predictable in higher dimensions.
+\par An early fix for this problem was given by Faure \cite{faure} who proposed to use bases in the Halton sequence as the first prime number greater than dimension $s$, and further to re-order each element using certain permutations based on Pascal matrices.
+\par Below we have displayed a 2-dimensional Halton sequence with 1500 points using base 2 and 3. To illustrate the predictable nature for high dimensions we will also display a 2-dimensional graph using the 10th and 11th prime respectively.
+\begin{figure}[!htb]
+    \centering
+    \includegraphics[width=8cm]{Images/23halton.png}
+    \caption{2-D Halton sequence with 1500 points using $2^{nd}$ and $3^{rd}$ prime as bases.}
+    \label{fig:example23halton}
+\end{figure}
+\begin{figure}[!htb]
+    \centering
+    \includegraphics[width=8cm]{Images/1011halton.png}
+    \caption{2-D Halton sequence with 1500 points using $10^{th}$ and $11^{th}$ prime as bases. This helps visualize the problem of overly predictive points that occur in higher dimensions.}
+    \label{fig:example1011halton}
+\end{figure}
+\clearpage
+\subsubsection{A cursory view of (t,s) sequences}
 
-
-\section{Importance sampling}
+Before expounding on a few other types of quasi-random sequences (namely, Sobol and Niederreiter) we will first list out a few important definitions in a summarized manner. Throughout this section we will extensively refer to a paper by J. Dick and H. Niederreiter \cite{exactnied}.
+\par Recall the definition of the radical-inverse function (see e.q. \ref{radicalinverse}). For some $\mathbf{x} \in [0,1]^s$ consider, $$[\mathbf{x}]_{b, m}=(\phi_b(x^1), \cdots, \phi_b(x^s))$$ Here $m$ is the upper bound of summation. Note the difference between the Halton sequence, here we use a fixed base $b$.
+\par For integers $b\geq 2, s\geq 1$ and $t \geq 0$. Consider a sequence of points $x_0, x_1, \cdots$, in $[0,1]^s$. This sequence of points is called a \textbf{\textit{(t, s)} sequence} in base $b$. If for all integers $k\geq0$ and $m > t$, the set $\mathcal{P}_{k,m}$ consisting of the points $[x_n]_{b,m}$ with $kb^m \leq n < (k+1)b^m$ has the following property-
+\\
+\textit{for every half-open sub-interval $E$ of $[0,1]^s$ of the following form}
+\begin{align}
+    E= \prod_{i=1}^s [a_i b^{-c_i}, (a_i+1)b^{-c_i}) \label{elementary}
+\end{align}
+\par \textit{for some integers $c_i>0$ and $0\leq a_i < b^{c_i}$ for $1\leq i \leq s$ and volume $b^{t-m}$,}\\
+there are exactly $b^t$ points of $\mathcal{P}_{k,m}$ contained in E.
+\par For the purposes of this project we are not providing detailed motivation for the concept of (t,s) sequences, we state it in a simplified definition since both Niederreiter and Sobol sequences are in fact (t,s) sequences.
+\subsubsection{Niederreiter sequence}
+Niederreiter sequences are considered to be the best quasi-random sequence for numerical integration. Here we shall provide a very brief overview of Niederreiter sequences \cite{exactnied, lowdiscrepancyNIEDERREITER198851} without going into details of the construction, with an example at the end.
+\par Consider for some fixed dimension $s\geq 1$, consider a list of pairwise co-prime non-constant polynomials belonging to any finite field of order $q$,\footnote{With the ordinary restriction that q is a power of some prime.} with $e_i=$ deg($p_i)\geq 1$ for $1 \leq i \leq s.$ , i.e., $p_1, p_2, \cdots p_s \in \mathbb{F}_q$.
+\par The generating matrices for the Niederreiter sequence are constructed using the constants of the Laurent series expansions over these polynomials and objects known as (t,m,s) nets \footnote{We have refrained from defining (t,m,s) nets as we are not providing the full proof. They are closely related to (t,s) sequences.}.
+\par For more detailed expositions refer to the papers by Niederreiter \cite{exactnied, tmsandtsnied,lowdiscrepancyNIEDERREITER198851}. The matter of note is that the Niederreiter sequences in fact form (t,s) sequences with the exact value of $t$ given as follows,
+$$ t= \sum_{i=1}^{s}(e_i-1) $$
+\begin{figure}[!htb]
+    \centering
+    \includegraphics[width=8cm]{Images/1500neiederreiter.png}
+    \caption{An example of a 2-Dimensional Niederreiter sequence with 1500 points.}
+    \label{fig:examplenied}
+\end{figure}
+\subsubsection{Sobol sequence} 
+Sobol sequences can be thought of as a special case of the Generalized Niederreiter sequence \cite{exactnied, SOBOL196786}. It also uses polynomials to generate the quasi-random sequence.
+\par Sobol sequences can be thought of as a (t,s) sequences in base 2 that uses polynomials as such, $p_1(x)=x \in \mathbb{F}_2[x]$ and $p_2, \cdots, p_s$ being primitive polynomials of successive order arranged in non-decreasing degrees to construct the generating matrices.
+\par Note the difference, Sobol uses primitive polynomials in base 2 while Niederreiter uses any pairwise co-prime polynomials in any base.
+\begin{figure}[!htb]
+    \centering
+    \includegraphics[width=8cm]{Images/1500sobol.png}
+    \caption{An example of a 2-Dimensional Sobol sequence with 1500 points.}
+    \label{fig:examplesobol}
+\end{figure}
+\FloatBarrier
+\subsection{Computing Apery's constant}
+We will end the project by computing a final example using Quasi Monte Carlo integration.\par
+Apery's constant is $\zeta(3)=\sum_{n=0}^{\infty}\frac{1}{3^n}$. A simple integral representation of Apery's constant is given as follows,
+\[\zeta(3)=\int_0^1\int_0^1\int_0^1 \frac{1}{1-xyz}\, dx\, dy\, dz\]
+\par For comparisons sake we will estimate the integral with Quasi Monte-Carlo and naïve Monte Carlo to provide a direct comparison. This is shown in the graph below.
+\begin{figure}[!htb]
+    \centering
+    \includegraphics[width=\textwidth]{Images/aperyquasi.png}
+    \caption{Quasi Monte Carlo vs naïve Monte Carlo estimates for Apery's constant (no. of points ranging from 1 to 20,000).}
+    \label{fig:aperyquasi}
+\end{figure}
+\par Repeating the experiment using the Niederreiter sequence with $10^6$ points repeated $10^2$ times we obtain the following results.
+\par $\zeta(3)\approx 1.202055 \pm 3.095 \cdot 10^{-5}$, with a percentage error of $-1.514 \cdot 10^{-4} \%.$
+\FloatBarrier
 \bibliographystyle{unsrt}
 \bibliography{references}
 \end{document}
